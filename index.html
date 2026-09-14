@@ -16,6 +16,8 @@
       <a href="#proceso">Proceso</a>
       <a href="#hallazgos">Hallazgos</a>
       <a href="#videos">Videos</a>
+      <a href="#stack">Stack</a>
+      <a href="#glosario">Glosario</a>
       <a href="#decisiones">Decisiones</a>
       <a href="https://github.com/scapder/BiteSized-Media" target="_blank" rel="noopener">Repo del pipeline ↗</a>
     </nav>
@@ -193,6 +195,29 @@
             pipeline.
           </p>
         </details>
+        <details class="video-caption">
+          <summary class="meta">Ficha técnica ▾</summary>
+          <p class="meta">
+            <strong>Modelo:</strong> <code>seedance_2_5</code>, modo <code>omni_reference</code> (video+voz en un solo paso, sin prompt de texto — extrapola desde las referencias).<br>
+            <strong>Referencias:</strong> <code>video_references</code> = CAMEO real de 8s · <code>audio_references</code> = grabación de voz real de Harold.<br>
+            <strong>Parámetro clave:</strong> <code>duration</code> pedida (15s) mayor a la duración real de la fuente (8s) — a propósito, para forzar el tramo de generación libre.<br>
+            <strong>Costo real:</strong> 97.5 créditos.
+          </p>
+          <pre><code>generate_video({
+  params: {
+    model: "seedance_2_5",
+    mode: "omni_reference",
+    duration: 15,
+    medias: [
+      { role: "video", value: "&lt;media_id del CAMEO fuente, 8s&gt;" },
+      { role: "audio", value: "&lt;media_id del audio real&gt;" }
+    ]
+  }
+})
+// luego, para clonar SOLO la cola libre (8s en adelante):
+// ffmpeg -ss 8.0 -i salida.mp4 -c:v libx264 -c:a aac tail.mp4
+create_voice_from_confirmed_audio({ media_id: "&lt;audio extraído de tail.mp4&gt;" })</code></pre>
+        </details>
       </div>
 
       <div class="card">
@@ -203,6 +228,25 @@
         <details class="video-caption">
           <summary class="meta">¿Qué falló acá? ▾</summary>
           <p class="meta">Video generado antes de tener el audio — mux simple de la narración sobre el video mudo. El ajuste labial se pierde por completo, confirmado a simple vista.</p>
+        </details>
+        <details class="video-caption">
+          <summary class="meta">Ficha técnica ▾</summary>
+          <p class="meta">
+            <strong>Modelo de video:</strong> <code>kling3_0</code> ("multi-shot" — el único modelo de Higgsfield con soporte de varios ángulos en una sola toma).<br>
+            <strong>Referencia:</strong> <code>start_image</code> = foto de Soul ID (Kling solo acepta start_image/end_image, sin rol genérico de identidad).<br>
+            <strong>Parámetros:</strong> 6 planos / 12s (duración adivinada, no anclada a ningún audio).<br>
+            <strong>Modelo de audio:</strong> <code>seed_audio</code>, voz clonada "v3", TTS generado por separado y muxeado después con ffmpeg (sin lipsync real).<br>
+            <strong>Costo real (video):</strong> 18 créditos.
+          </p>
+          <pre><code>generate_video({
+  params: {
+    model: "kling3_0",
+    duration: 12,
+    medias: [{ role: "image", value: "&lt;media_id foto Soul ID&gt;" }],
+    prompt: "&lt;guion de 6 planos, ver GUIA_ANGULOS.pdf&gt;"
+  }
+})
+// (mal orden) TTS generado después, muxeado con ffmpeg -map — sin lipsync</code></pre>
         </details>
       </div>
 
@@ -215,6 +259,32 @@
           <summary class="meta">¿Qué se corrigió? ▾</summary>
           <p class="meta">Audio generado primero, video re-anclado a su duración real (7s/4 planos), y <code>omni_reference</code> aplicado para el lipsync final — sostenido incluso en los cortes de ángulo. Subtítulos en formato "burst" para no tapar el plano.</p>
         </details>
+        <details class="video-caption">
+          <summary class="meta">Ficha técnica ▾</summary>
+          <p class="meta">
+            <strong>Paso 1 — audio:</strong> <code>seed_audio</code>, voz "v3", texto con "Sentientum" respelled fonéticamente como <code>Sentyentum</code> (fix de pronunciación). Duración real resultante: 7.08s.<br>
+            <strong>Paso 2 — video:</strong> <code>kling3_0</code>, 4 planos / 7s — anclado a esa duración real. Costo: 10.5 créditos.<br>
+            <strong>Paso 3 — lipsync:</strong> <code>seedance_2_5</code> modo <code>omni_reference</code> sobre el video de Kling + el audio del paso 1. Costo: 52 créditos (una primera corrida a 45.5 créditos salió con la mala pronunciación y se regeneró).<br>
+            <strong>Paso 4 — subtítulos:</strong> <code>.ass</code> propio (PlayResX/Y = resolución real del video) quemado con el filtro <code>ass</code> de ffmpeg.
+          </p>
+          <pre><code>voz = generate_audio({
+  params: { model: "seed_audio", voice_type: "element", voice_id: "&lt;id v3&gt;",
+    prompt: "Con Sentyentum simulamos comportamiento humano antes de que ocurra de verdad. No es intuición, es evidencia." }
+})
+// medir duración real de voz.wav -> 7.08s
+
+video = generate_video({
+  params: { model: "kling3_0", duration: 7, medias: [{ role: "image", value: "&lt;soul id&gt;" }],
+    prompt: "&lt;guion de 4 planos anclado a 7s&gt;" }
+})
+
+lipsync = generate_video({
+  params: { model: "seedance_2_5", mode: "omni_reference",
+    medias: [{ role: "video", value: video.job_id }, { role: "audio", value: voz.job_id }] }
+})
+
+ffmpeg -i lipsync.mp4 -vf "ass=captions.ass" -c:a copy final.mp4</code></pre>
+        </details>
       </div>
 
       <div class="card">
@@ -225,6 +295,20 @@
         <details class="video-caption">
           <summary class="meta">Detalle ▾</summary>
           <p class="meta">Vía <code>dubbing</code>, no TTS cruzado. Recortado de 8.04s a 7.75s para eliminar el remanente de labios sin audio.</p>
+        </details>
+        <details class="video-caption">
+          <summary class="meta">Ficha técnica ▾</summary>
+          <p class="meta">
+            <strong>Modelo:</strong> <code>dubbing_lipsync</code> (Higgsfield <code>dubbing</code>) — traduce el audio real y resincroniza labios; no usa prompt de texto ni clonación de voz por separado.<br>
+            <strong>Input:</strong> el mismo clip de "Hallazgo 3 · Después", sin subtítulos quemados.<br>
+            <strong>Post:</strong> <code>ffmpeg silencedetect</code> para ubicar dónde termina el audio real, y recorte a ese punto.<br>
+            <strong>Costo real:</strong> 24 créditos.
+          </p>
+          <pre><code>dubbing({ params: { video_id: "&lt;media_id del clip sin subtítulos&gt;", target_language: "eng" } })
+// verificar con:
+ffmpeg -i salida.wav -af silencedetect=noise=-35dB:d=0.3 -f null -
+// recortar en el silence_start detectado:
+ffmpeg -i salida.mp4 -t &lt;silence_start&gt; -c:v libx264 -c:a aac final_en.mp4</code></pre>
         </details>
       </div>
 
@@ -237,6 +321,13 @@
           <summary class="meta">Detalle ▾</summary>
           <p class="meta">Mismo método. Recortado de 8.04s a 6.96s — el defecto de duración fija fue más marcado en portugués (1.12s de remanente contra 0.32s en inglés).</p>
         </details>
+        <details class="video-caption">
+          <summary class="meta">Ficha técnica ▾</summary>
+          <p class="meta">
+            Igual que el doblaje EN, con <code>target_language: "por"</code>. Costo real: 24 créditos (más 30 créditos en una segunda corrida de prueba, sobre un clip alargado con frames congelados, que confirmó que alargar el input no ayuda — ver Hallazgo 4).
+          </p>
+          <pre><code>dubbing({ params: { video_id: "&lt;mismo media_id&gt;", target_language: "por" } })</code></pre>
+        </details>
       </div>
 
     </div>
@@ -247,6 +338,77 @@
         <video controls preload="metadata" src="videos/cv_edge_sight_v4.mp4"></video>
       </div>
       <p class="meta" style="margin-top:8px;">El producto final de esta primera vuelta: los 5 clips (hook, 3 demos, cierre) ensamblados, narrados y subtitulados.</p>
+      <details class="video-caption">
+        <summary class="meta">Ficha técnica ▾</summary>
+        <p class="meta">
+          Hook y cierre: CAMEO real generado con Higgsfield (identidad vía Soul ID). Las 3 demos:
+          narración <code>seed_audio</code> (voz "v3") sobre el screen-recording original — sin
+          rostro que sincronizar, no requiere lipsync. Ensamblado, mezcla con música y subtítulos
+          <code>.ass</code> vía ffmpeg (concat + filtros de audio/video), no vía ningún modelo generativo.
+        </p>
+      </details>
+    </div>
+  </section>
+
+  <section class="section" id="stack">
+    <div class="section-card">
+      <h2 class="section-title">Stack — no todo es "una IA que genera video"</h2>
+      <p class="meta">Bajo un mismo proveedor (Higgsfield) conviven varias categorías de producto, con propósitos distintos y no intercambiables.</p>
+
+      <div class="grid two" style="margin-top:16px;">
+        <div class="card">
+          <h3>1. Generación con identidad fija</h3>
+          <p><strong>Soul ID</strong> (identidad entrenada desde fotos reales) + <strong>Seedance 2.5</strong> (<code>omni_reference</code>) + <strong>Kling v3.0</strong> (multi-shot). Para cuando importa que sea reconociblemente la misma persona en cada generación — cameos, talking heads. No sirve para creatividad publicitaria genérica.</p>
+        </div>
+        <div class="card">
+          <h3>2. Doblaje/traducción de video real</h3>
+          <p><strong><code>dubbing</code></strong> (<code>dubbing_lipsync</code>). Traduce el audio de un video real y resincroniza labios, preservando la voz del hablante — no clona voz ni genera video nuevo. Categoría distinta de la clonación de voz por texto.</p>
+        </div>
+        <div class="card">
+          <h3>3. Clonación de voz / TTS</h3>
+          <p><strong><code>seed_audio</code></strong> + <strong>Voice Element</strong> (<code>create_voice_from_confirmed_audio</code>). Genera voz desde texto escrito. Requiere que el idioma del texto coincida con el idioma de la muestra de origen — no traduce, solo sintetiza (ver Hallazgo 4).</p>
+        </div>
+        <div class="card">
+          <h3>4. Generación para marketing/ads</h3>
+          <p><strong>Marketing Studio</strong> (dentro de Higgsfield) — pensado para creatividades publicitarias a escala sobre un producto/catálogo, con "style kits" de marca. No busca identidad humana fija ni narrativa larga; optimiza para variantes rápidas de anuncio.</p>
+        </div>
+        <div class="card">
+          <h3>5. Analítica / predicción de desempeño</h3>
+          <p><strong>Virality Predictor</strong> ("Predict Virality"). No genera nada — toma un video ya hecho (subido o generado) y devuelve un dashboard de potencial de viralidad, engagement, fuerza del hook, riesgo de retención. Es la categoría que falta si solo se piensa en "herramientas que generan": mide, no produce.</p>
+        </div>
+        <div class="card">
+          <h3>6. Ensamblado y verificación determinística</h3>
+          <p><strong>ffmpeg</strong> (mux, subtítulos <code>.ass</code>, <code>silencedetect</code>, <code>faststart</code>) + <strong>whisper.cpp</strong> (transcripción). Nada de esto es generativo — es la capa de control que hace confiable lo generativo: sin esto, "funcionó" es una opinión, no un hecho verificado.</p>
+        </div>
+      </div>
+
+      <p style="margin-top:16px;">
+        La confusión típica es tratar estas seis categorías como una sola "IA de video". No lo son: una
+        herramienta de identidad fija no reemplaza a una de marketing masivo, y ninguna de las dos mide
+        si el resultado va a funcionar — para eso existe una tercera categoría (analítica), separada de
+        la generación misma.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" id="glosario">
+    <div class="section-card">
+      <h2 class="section-title">Glosario</h2>
+      <table>
+        <tr><th>Término</th><th>Qué significa acá</th></tr>
+        <tr><td><strong>Soul ID</strong></td><td>Identidad de una persona entrenada por Higgsfield desde 15-20 fotos reales, reutilizable en generaciones sin volver a subir referencia.</td></tr>
+        <tr><td><strong>CAMEO</strong></td><td>Clip de video real y corto (grabado, no generado) usado como referencia de identidad/voz/movimiento para una generación posterior.</td></tr>
+        <tr><td><strong><code>omni_reference</code></strong></td><td>Modo de <code>seedance_2_5</code> que extiende un CAMEO real más allá de su propia duración: dobla fielmente hasta el límite real, y genera libremente después. Ver Hallazgo 2.</td></tr>
+        <tr><td><strong>Voice Element / clonación de voz</strong></td><td>Voz sintética entrenada desde una muestra de audio real (<code>create_voice_from_confirmed_audio</code>), reutilizable luego vía <code>seed_audio</code>.</td></tr>
+        <tr><td><strong>"Tail-mining"</strong></td><td>Término interno (no de Higgsfield) para la técnica de aislar la cola de generación libre de un <code>omni_reference</code> y clonar una voz nueva solo de ese segmento — la fuente de la voz "v3".</td></tr>
+        <tr><td><strong><code>dubbing</code></strong></td><td>Herramienta de Higgsfield que traduce el audio real de un video y resincroniza labios, preservando la voz original del hablante — no es TTS ni clonación.</td></tr>
+        <tr><td><strong>Lipsync</strong></td><td>Sincronización de movimiento labial con un audio específico. No es automático solo por generar video con audio — hay que pedirlo explícitamente (<code>omni_reference</code> o <code>dubbing</code>).</td></tr>
+        <tr><td><strong>TTS</strong></td><td>Text-to-Speech: generar audio de voz a partir de texto escrito (<code>seed_audio</code>). Distinto de doblaje: no traduce ni parte de un audio real.</td></tr>
+        <tr><td><strong><code>faststart</code> / átomo <code>moov</code></strong></td><td>Metadata de un archivo <code>.mp4</code> que debe ir al principio del archivo (no al final) para que un navegador pueda reproducirlo progresivamente, especialmente en mobile. Ver el fix aplicado a los videos de esta misma página.</td></tr>
+        <tr><td><strong><code>silencedetect</code></strong></td><td>Filtro de ffmpeg que detecta tramos de silencio en un audio — usado acá para ubicar dónde recortar un doblaje que terminó antes que el video.</td></tr>
+        <tr><td><strong>whisper.cpp</strong></td><td>Motor de transcripción (usado vía el filtro nativo <code>whisper</code> de ffmpeg) para verificar por escrito el contenido real de un audio generado, en vez de confiar solo en escucharlo.</td></tr>
+        <tr><td><strong>Virality Predictor</strong></td><td>Herramienta de Higgsfield que analiza un video ya existente y devuelve un dashboard de potencial de viralidad/engagement — no genera contenido.</td></tr>
+      </table>
     </div>
   </section>
 
