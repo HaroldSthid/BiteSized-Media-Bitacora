@@ -178,6 +178,24 @@
     <div class="grid two" style="margin-top:16px;">
 
       <div class="card">
+        <span class="eyebrow">Hallazgo 2 · La cola "libre"</span>
+        <div class="video-frame">
+          <video controls preload="metadata" src="videos/omniref_surprise_tail.mp4"></video>
+        </div>
+        <details class="video-caption">
+          <summary class="meta">¿Por qué esta parte suena distinto? ▾</summary>
+          <p class="meta">
+            El clip fuente real dura 8s. Este tramo empieza justo después — sin frames reales
+            de dónde extender, el modelo deja de doblar fielmente el audio de referencia y
+            genera voz propia. Hipótesis (documentada en <code>decisions.md</code>): esa síntesis
+            libre queda, empíricamente, más cerca de la cadencia natural real que cualquier
+            clonación deliberada — y de acá salió la voz base "v3" adoptada para el resto del
+            pipeline.
+          </p>
+        </details>
+      </div>
+
+      <div class="card">
         <span class="eyebrow">Hallazgo 3 · Antes</span>
         <div class="video-frame">
           <video controls preload="metadata" src="videos/angulos_final_doblado.mp4"></video>
