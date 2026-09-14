@@ -8,7 +8,7 @@ Higgsfield MCP + ffmpeg + whisper.cpp.
 
 Dos propósitos:
 
-- **Onboarding** para quien se sume al equipo (Lead Content, Full Stack
+- **Onboarding** para quien se sume al equipo (Content Lead, Full Stack
   Developer) en este proyecto.
 - **Material de clase**: casos de uso reales de IA generativa aplicada,
   con los errores incluidos — no una demo prolija.
