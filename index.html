@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bitácora — Edge Sight AI / Sentientum</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="shell">
+
+  <header class="topbar">
+    <a class="brand" href="#">BiteSized-Media · Bitácora</a>
+    <nav class="nav">
+      <a href="#caso">El caso</a>
+      <a href="#proceso">Proceso</a>
+      <a href="#hallazgos">Hallazgos</a>
+      <a href="#videos">Videos</a>
+      <a href="#decisiones">Decisiones</a>
+      <a href="https://github.com/scapder/BiteSized-Media" target="_blank" rel="noopener">Repo del pipeline ↗</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <span class="eyebrow">Caso de uso real · IA generativa aplicada a video</span>
+    <h1>Edge Sight AI / Sentientum — Pipeline de video sintético</h1>
+    <p class="lede">
+      Bitácora de cómo se produjo, doblaje incluido, una pieza de producto en video para
+      Sentientum (Scapder) a partir de una grabación de pantalla cruda, usando un stack
+      100% agéntico (Higgsfield + ffmpeg + whisper.cpp). Escrita con dos propósitos: onboarding
+      para quien se sume al equipo de contenido o de desarrollo, y material de clase — soy
+      profesor universitario y prefiero llevar casos reales, con sus errores incluidos, en vez
+      de demos prolijas.
+    </p>
+    <div class="pill-row">
+      <span class="pill">Higgsfield MCP</span>
+      <span class="pill">Soul ID</span>
+      <span class="pill">Voice cloning</span>
+      <span class="pill">omni_reference</span>
+      <span class="pill">dubbing</span>
+      <span class="pill">ffmpeg</span>
+      <span class="pill">whisper.cpp</span>
+    </div>
+  </section>
+
+  <section class="section" id="caso">
+    <div class="section-card">
+      <h2 class="section-title">El caso</h2>
+      <p class="meta">De qué partimos y a dónde queríamos llegar.</p>
+      <p>
+        El insumo original es una grabación de pantalla de 8 minutos de <strong>Vision Sync</strong>,
+        un hub de demos de computer vision con tres sub-demos: detección de objetos
+        (COCO-SSD, aplicado a participación en clase), seguimiento facial (MediaPipe, con
+        caso de uso de monitoreo de conductor) y estimación de pose (control de una
+        "resortera de burbujas", con caso de uso de teleoperación robótica).
+      </p>
+      <p>
+        El objetivo de producto no era "explicar computer vision" en abstracto, sino
+        empaquetarlo como una pieza de <strong>Edge Sight AI</strong> — el producto de Scapder —
+        con un ángulo académico pero divertido, para estudiantes de ingeniería que ven este
+        campo como algo lejano. La consigna original del guion (dada por el CEO de Scapder,
+        no por un brief externo): hook sobre Scapder/Edge Sight AI, tres demos explicadas con
+        su caso de uso real, y cierre con "aprender computer vision no tiene que ser aburrido".
+      </p>
+    </div>
+  </section>
+
+  <section class="section" id="proceso">
+    <h2 class="section-title">Proceso</h2>
+    <p class="meta">Cómo se construyó hasta ahora, y cómo se reparte de acá en adelante.</p>
+
+    <div class="grid two" style="margin-top:16px;">
+      <div class="card">
+        <h3>Cómo se hizo esta primera vuelta</h3>
+        <p>
+          Un único operador (yo) dirigiendo un agente de código orquestando Higgsfield MCP:
+          transcripción del video crudo → guion → clonación de voz → generación/edición de
+          clips → doblaje multilenguaje → subtitulado → ensamblado final. Cada paso pagado se
+          revisa en créditos antes de correr, y cada resultado se verifica (transcripción,
+          detección de silencios, inspección de frames) antes de darlo por bueno — no se
+          reporta "funcionó" sin evidencia.
+        </p>
+      </div>
+      <div class="card">
+        <h3>Roles para el equipo que se suma</h3>
+        <p>
+          <strong>Lead Content:</strong> dueño del guion, tono de marca y validación de que cada
+          pieza sirve al ángulo académico-y-divertido — no del tooling.<br><br>
+          <strong>Full Stack Developer:</strong> dueño de la automatización del pipeline (hoy
+          manual vía MCP tool-calls) — candidatos naturales: un endpoint que dispare
+          transcripción + guion + generación sin intervención manual, y un panel simple para
+          revisar/aprobar clips antes de publicar.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="hallazgos">
+    <div class="section-card">
+      <h2 class="section-title">Hallazgos técnicos</h2>
+      <p class="meta">Lo que funcionó, lo que no, y por qué — con evidencia, no solo la conclusión.</p>
+
+      <div class="finding">
+        <span class="verdict ok">✓ Adoptado</span>
+        <h3>1. Higgsfield reemplaza a Artlist/Seedance para contenido con identidad fija</h3>
+        <p>
+          El acceso a Seedance vía Artlist tenía dos bugs recurrentes en footage real: deriva
+          de identidad y reemplazo de audio EN→ES incompleto. Higgsfield resuelve ambos con
+          <strong>Soul ID</strong> (identidad entrenada desde 15-20 fotos reales, reutilizable sin
+          re-subir referencia) y <code>dubbing</code> (traduce el audio real y re-sincroniza labios
+          preservando la voz del hablante — sin clonar ni generar lipsync por separado).
+        </p>
+      </div>
+
+      <div class="finding">
+        <span class="verdict ok">✓ Adoptado</span>
+        <h3>2. La mejor clonación de voz salió de un "descarte" de generación, no de una muestra deliberada</h3>
+        <p>
+          Cada clonación hecha desde una grabación directa reproducía identidad pero no la
+          cadencia natural. El fix fue casi accidental: <code>generate_video</code> en modo
+          <code>omni_reference</code> puede extender un CAMEO real más allá de su propia duración —
+          hasta ese punto dobla fielmente el audio de referencia, pero pasado ese punto,
+          sin frames reales de donde extender, el modelo genera voz libremente. Esa cola
+          "libre" resultó más cercana a la cadencia real que cualquier clonación deliberada.
+          Técnica adoptada: generar una extensión más larga de lo necesario, aislar la cola,
+          y clonar una voz nueva solo de ese segmento — verificando siempre con una prueba
+          de texto no relacionado antes de adoptarla.
+        </p>
+      </div>
+
+      <div class="finding">
+        <span class="verdict bad">✗ No funcionó</span> <span class="verdict ok">→ corregido</span>
+        <h3>3. Talking heads multi-ángulo: el orden del pipeline importa</h3>
+        <p>
+          Probando la técnica "una sola toma, N ángulos de cámara" (Kling v3.0): el primer
+          intento generó el video a una duración adivinada (12s / 6 planos) y después intentó
+          encajarle una narración de TTS generada por separado (7.08s) — el mux dejó los labios
+          completamente desincronizados. Kling anima los labios según su propia lectura interna
+          del guion del prompt, no según ningún audio específico generado después.
+        </p>
+        <p>
+          <strong>Fix:</strong> generar primero la voz, medir su duración real, y recién ahí construir
+          el prompt del video anclado a ese número (4 planos / 7s, no 6/12). Con eso alineado,
+          <code>omni_reference</code> sí sostiene lipsync incluso sobre un video con cortes duros
+          entre ángulos — algo que asumíamos riesgoso y no lo era. Ver el contraste en
+          <a href="#videos">la sección de videos</a> de más abajo.
+        </p>
+      </div>
+
+      <div class="finding">
+        <span class="verdict warn">⚠ Parcial</span>
+        <h3>4. Doblaje multilenguaje: TTS cruzado de idioma no sirve, <code>dubbing</code> sí — con un defecto conocido</h3>
+        <p>
+          Pedirle a una voz clonada solo de audio en español que hable en inglés o portugués
+          vía TTS (<code>seed_audio</code>) no solo suena con acento — inventa y pierde contenido,
+          confirmado por transcripción. La herramienta <code>dubbing</code> de Higgsfield (traduce el
+          audio real y resincroniza labios) sí sostiene el contenido correctamente en ambos
+          idiomas.
+        </p>
+        <p>
+          Defecto encontrado: la duración del audio traducido es fija según el contenido
+          traducido, no se estira ni comprime a la duración del video de entrada — probamos
+          alargar el video de entrada con frames congelados esperando "darle más margen" a la
+          traducción, y no funcionó: el corte real se mantuvo en el mismo punto, solo creció el
+          silencio final. El fix real es recortar el <em>video de salida</em> donde
+          <code>ffmpeg silencedetect</code> marca que el audio doblado termina — perdiendo el
+          último instante del plano final, pero sin labios moviéndose en silencio.
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="section" id="videos">
+    <h2 class="section-title">Evidencia en video</h2>
+    <p class="meta">Antes/después de los hallazgos de arriba — no son demos prolijas, son las pruebas reales.</p>
+
+    <div class="grid two" style="margin-top:16px;">
+
+      <div class="card">
+        <span class="eyebrow">Hallazgo 3 · Antes</span>
+        <div class="video-frame">
+          <video controls preload="metadata" src="videos/angulos_final_doblado.mp4"></video>
+        </div>
+        <details class="video-caption">
+          <summary class="meta">¿Qué falló acá? ▾</summary>
+          <p class="meta">Video generado antes de tener el audio — mux simple de la narración sobre el video mudo. El ajuste labial se pierde por completo, confirmado a simple vista.</p>
+        </details>
+      </div>
+
+      <div class="card">
+        <span class="eyebrow">Hallazgo 3 · Después</span>
+        <div class="video-frame">
+          <video controls preload="metadata" src="videos/angulos_omniref_fix_subs.mp4"></video>
+        </div>
+        <details class="video-caption">
+          <summary class="meta">¿Qué se corrigió? ▾</summary>
+          <p class="meta">Audio generado primero, video re-anclado a su duración real (7s/4 planos), y <code>omni_reference</code> aplicado para el lipsync final — sostenido incluso en los cortes de ángulo. Subtítulos en formato "burst" para no tapar el plano.</p>
+        </details>
+      </div>
+
+      <div class="card">
+        <span class="eyebrow">Hallazgo 4 · Doblaje EN</span>
+        <div class="video-frame">
+          <video controls preload="metadata" src="videos/angulos_dubbing_en_trimmed.mp4"></video>
+        </div>
+        <details class="video-caption">
+          <summary class="meta">Detalle ▾</summary>
+          <p class="meta">Vía <code>dubbing</code>, no TTS cruzado. Recortado de 8.04s a 7.75s para eliminar el remanente de labios sin audio.</p>
+        </details>
+      </div>
+
+      <div class="card">
+        <span class="eyebrow">Hallazgo 4 · Doblaje PT</span>
+        <div class="video-frame">
+          <video controls preload="metadata" src="videos/angulos_dubbing_pt_trimmed.mp4"></video>
+        </div>
+        <details class="video-caption">
+          <summary class="meta">Detalle ▾</summary>
+          <p class="meta">Mismo método. Recortado de 8.04s a 6.96s — el defecto de duración fija fue más marcado en portugués (1.12s de remanente contra 0.32s en inglés).</p>
+        </details>
+      </div>
+
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <span class="eyebrow">Pieza completa · Español</span>
+      <div class="video-frame" style="max-width:480px;">
+        <video controls preload="metadata" src="videos/cv_edge_sight_v4.mp4"></video>
+      </div>
+      <p class="meta" style="margin-top:8px;">El producto final de esta primera vuelta: los 5 clips (hook, 3 demos, cierre) ensamblados, narrados y subtitulados.</p>
+    </div>
+  </section>
+
+  <section class="section" id="decisiones">
+    <div class="section-card">
+      <h2 class="section-title">Decisiones humanas</h2>
+      <p class="meta">Lo que no delegamos, y por qué.</p>
+      <div class="grid two">
+        <div class="card">
+          <h3>Guion y ángulo narrativo</h3>
+          <p>El agente propuso estructura y tono, pero el guion (hook, los 4 puntos de contenido, y el cierre) lo definió el CEO de Scapder — no se generó desde un prompt genérico.</p>
+        </div>
+        <div class="card">
+          <h3>Cuál voz adoptar como base</h3>
+          <p>El agente detecta candidatos y hace la prueba técnica, pero la decisión de adoptar "v3" (la cola libre de <code>omni_reference</code>) sobre "v2" fue una comparación escuchada y confirmada por una persona, no un umbral automático.</p>
+        </div>
+        <div class="card">
+          <h3>Recortar en vez de regenerar</h3>
+          <p>Ante el defecto de duración fija del doblaje, la opción "barata" era regenerar con más créditos esperando que se arreglara solo — se decidió no hacerlo sin evidencia de que ayudaría, probarlo primero (no ayudó) y resolverlo con edición determinística.</p>
+        </div>
+        <div class="card">
+          <h3>Repositorio y visibilidad</h3>
+          <p>Esta bitácora se publica en un repo nuevo y público, separado del repo de trabajo del pipeline (privado) — separación deliberada entre material de proceso interno y material de enseñanza/onboarding.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-card">
+      <h2 class="section-title">Lo que la IA hizo vs. lo que decidiste vos</h2>
+      <p>
+        La IA (vía Higgsfield MCP orquestado por un agente de código) hizo el trabajo pesado
+        de generación: clonó voces, generó video, tradujo y sincronizó labios, transcribió
+        para verificar — en horas, no días. Pero cada vez que algo salía mal, la causa no la
+        encontró "probando de nuevo": se encontró comparando duraciones reales, corriendo
+        detección de silencio, transcribiendo el resultado para leerlo en vez de asumir que
+        sonaba bien. El criterio de qué guardar, qué descartar, y qué está realmente resuelto
+        contra lo que solo "parece" resuelto, siguió siendo una decisión humana en cada paso.
+      </p>
+    </div>
+  </section>
+
+  <div class="footer">
+    <span>BiteSized-Media-Bitácora · Scapder / Sentientum · <span id="year"></span></span>
+    <span><a href="https://github.com/HaroldSthid/BiteSized-Media-Bitacora" target="_blank" rel="noopener">Repo de esta bitácora ↗</a></span>
+  </div>
+
+</div>
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>
