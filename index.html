@@ -16,6 +16,8 @@
       <a href="#proceso">Proceso</a>
       <a href="#hallazgos">Hallazgos</a>
       <a href="#videos">Videos</a>
+      <a href="#episodio">Episodio 2</a>
+      <a href="#costos">Costos</a>
       <a href="#stack">Stack</a>
       <a href="#glosario">Glosario</a>
       <a href="#decisiones">Decisiones</a>
@@ -350,6 +352,174 @@ ffmpeg -i salida.mp4 -t &lt;silence_start&gt; -c:v libx264 -c:a aac final_en.mp4
     </div>
   </section>
 
+  <section class="section" id="episodio">
+    <div class="section-card">
+      <h2 class="section-title">Segundo caso: el podcast «Vuelo en Bandada»</h2>
+      <p class="meta">Un episodio de formato conversación, con host real (lipsync) y co-host sintético, en español, inglés y portugués, horizontal y vertical.</p>
+      <p>
+        Partimos del formato "co-host sintético": yo hablo con mi voz clonada y una segunda voz,
+        <strong>Marisol</strong>, hace las preguntas. El episodio recorre los cuatro pasos de una
+        simulación en Sentientum (Murmullo, Voces, Conversación, Conclusión). Después le dimos
+        marca —nombre, tarjeta de apertura, pie permanente con mi cargo, cortinilla musical y una
+        pregunta final para abrir conversación— y lo publicamos en tres idiomas y en dos formatos.
+        Todo el ensamblado y la marca son código versionado (<code>assembly/podcast/</code> en el repo del
+        pipeline), no ediciones manuales.
+      </p>
+
+      <div class="grid two" style="margin-top:16px;">
+        <div class="card">
+          <span class="eyebrow">Episodio completo · Español (16:9)</span>
+          <div class="video-frame">
+            <video controls preload="metadata" src="videos/vuelo_en_bandada_es.mp4"></video>
+          </div>
+          <details class="video-caption">
+            <summary class="meta">Ficha técnica ▾</summary>
+            <p class="meta">
+              92 s: tarjeta de apertura (4 s) + conversación (79.5 s, 11 turnos) + cierre con pregunta (8.8 s).
+              Seis turnos del co-host sobre imagen fija del CAMEO y cinco turnos míos con lipsync.
+              Cortinilla de Artlist (Lyria 3, instrumental), subtítulos <code>.ass</code> quemados,
+              pie "Harold Sthid · CEO de Scapder" durante toda la conversación.
+            </p>
+          </details>
+        </div>
+        <div class="card">
+          <span class="eyebrow">Versión vertical · Español (9:16)</span>
+          <div class="video-frame">
+            <video controls preload="metadata" src="videos/vuelo_en_bandada_es_9x16.mp4"></video>
+          </div>
+          <details class="video-caption">
+            <summary class="meta">¿Por qué no es un recorte a pantalla completa? ▾</summary>
+            <p class="meta">
+              Recortar el video 16:9 a 9:16 deja una franja de 405×720 px que hay que ampliar a 1080×1920
+              (~2,7 veces): se ve suave y desaparece el micrófono, que es lo que dice "esto es un podcast".
+              Elegimos el video completo sobre un fondo de marca, con subtítulos grandes debajo.
+            </p>
+          </details>
+        </div>
+      </div>
+
+      <div class="finding">
+        <span class="verdict ok">✓ Adoptado</span>
+        <h3>5. En el co-host sintético solo se paga el lipsync de quien habla en cámara</h3>
+        <p>
+          El lipsync (<code>seedance_2_5</code> + <code>omni_reference</code>, 720p) cuesta unos
+          <strong>7 créditos por segundo</strong>. Los turnos del co-host no lo necesitan: mientras Marisol
+          habla, el video muestra un fotograma mío escuchando (un clip armado con ffmpeg, gratis). Su
+          audio sale de <code>seed_audio</code> a menos de 1 crédito por línea. La conversación se diseña
+          para que hable más el co-host y yo diga lo justo.
+        </p>
+      </div>
+
+      <div class="finding">
+        <span class="verdict bad">✗ No funcionó</span> <span class="verdict ok">→ corregido</span>
+        <h3>6. Usar el clip fuente equivocado costó ~246 créditos</h3>
+        <p>
+          Había dos clips de 8 s casi idénticos en nombre y duración: el CAMEO del podcast (estudio con
+          micrófono) y otro local con pared blanca. Generamos cuatro turnos de lipsync con el equivocado.
+          <strong>Regla:</strong> antes de gastar, extraer un fotograma del clip exacto y compararlo con una
+          salida buena anterior.
+        </p>
+      </div>
+
+      <div class="finding">
+        <span class="verdict bad">✗ No funcionó</span> <span class="verdict ok">→ corregido</span>
+        <h3>7. Verificar cada segmento por separado, no el episodio armado</h3>
+        <p>
+          <code>seed_audio</code> a veces agrega colas inventadas ("suscríbete al canal") que
+          <code>silenceremove</code> no detecta porque no son silencio. Y la transcripción con whisper del
+          episodio completo se saltó tramos enteros; transcribiendo cada segmento por separado salió limpia.
+          Las líneas de audio se aprueban <em>antes</em> del lipsync, porque repetir el video es lo caro.
+        </p>
+      </div>
+
+      <div class="finding">
+        <span class="verdict warn">⚠ Parcial</span>
+        <h3>8. Multilingüe: primero subtítulos, el doblaje queda para después</h3>
+        <p>
+          Las versiones en inglés y portugués llevan el audio en español con subtítulos quemados, tarjetas
+          y cargo traducidos: <strong>0 créditos</strong>. Doblarlas costaría unos 133 créditos por idioma
+          (<code>dubbing</code>, extrapolado de 24 créditos por 8 s) y Artlist no sirve para esto: genera audio
+          (55 créditos para el host en inglés) pero no doblaje de video, así que los labios seguirían en
+          español. Decidimos no doblar por ahora y usar los créditos en contenido nuevo.
+        </p>
+      </div>
+
+      <div class="finding">
+        <span class="verdict ok">✓ Adoptado</span>
+        <h3>9. Una sola generación de música alcanza para todo</h3>
+        <p>
+          Lyria 3 en Artlist solo genera 30 s fijos (150 créditos). De esa pista salen la cortinilla de
+          apertura de 10 s, la variante de 5 s para el vertical y un tramo distinto para el cierre. Bajo la
+          voz hay que bajarla fuerte (0,1 de volumen): con 0,22 whisper ya malinterpretaba la pregunta.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="costos">
+    <div class="section-card">
+      <h2 class="section-title">Costos: cuánto cuesta producir una pieza</h2>
+      <p class="meta">Medido del historial real de créditos del 12 de octubre de 2026, no estimado.</p>
+
+      <h3>Valor del crédito</h3>
+      <table>
+        <tr><th>Plataforma</th><th>Plan</th><th>Precio</th><th>Créditos</th><th>Valor por crédito</th></tr>
+        <tr><td>Higgsfield</td><td>Plus</td><td>USD 49,00 / mes</td><td>1.000</td><td>~USD 0,049</td></tr>
+        <tr><td>Artlist</td><td>AI Suite 40K</td><td>USD 39,99 / mes</td><td>40.000</td><td>~USD 0,001</td></tr>
+      </table>
+
+      <h3 style="margin-top:20px;">Tarifas observadas</h3>
+      <table>
+        <tr><th>Operación</th><th>Costo observado</th></tr>
+        <tr><td>Lipsync, <code>seedance_2_5</code> <code>omni_reference</code> 720p</td><td>~7 créditos por segundo (7 s = 49, 8 s = 56, 9 s = 63, 12 s = 84)</td></tr>
+        <tr><td>Audio, <code>seed_audio</code></td><td>0,2 a 0,9 créditos por línea corta</td></tr>
+        <tr><td><code>dubbing</code> (traducir y resincronizar labios)</td><td>~24 créditos por 8 s de video</td></tr>
+        <tr><td>Video multi-ángulo, <code>kling3_0</code></td><td>4,5 a 10,5 créditos</td></tr>
+        <tr><td>Imagen, Nano Banana 2 (Higgsfield)</td><td>1,5 créditos</td></tr>
+        <tr><td>Música generada, Artlist Lyria 3</td><td>150 créditos por 30 s (duración fija)</td></tr>
+        <tr><td>Locución, Artlist (MiniMax)</td><td>55 créditos por ~44 s de texto</td></tr>
+        <tr><td>Subtítulos, tarjetas, versión vertical, ensamblado</td><td>0 créditos (whisper, Pillow y ffmpeg locales)</td></tr>
+      </table>
+
+      <h3 style="margin-top:20px;">Lo que costó el episodio «Vuelo en Bandada»</h3>
+      <table>
+        <tr><th>Concepto</th><th>Créditos</th><th>USD</th></tr>
+        <tr><td>Higgsfield, total del día (neto de reembolsos)</td><td>~769</td><td>~37,70</td></tr>
+        <tr><td>&nbsp;&nbsp;de eso, la versión limpia (5 turnos de lipsync finales + audio)</td><td>~342</td><td>~16,80</td></tr>
+        <tr><td>&nbsp;&nbsp;de eso, reintentos (fuente equivocada, alucinaciones, regeneraciones)</td><td>~427</td><td>~20,90</td></tr>
+        <tr><td>Artlist, cortinilla</td><td>150</td><td>~0,15</td></tr>
+      </table>
+      <p>
+        El episodio consumió el <strong>77% del mes</strong> de Higgsfield, y <strong>más de la mitad se fue en
+        reintentos</strong>. El costo que importa para planear no es el del episodio limpio, sino el que
+        trae el nivel de error que tuvimos.
+      </p>
+
+      <h3 style="margin-top:20px;">Cuánto costaría el siguiente segmento</h3>
+      <table>
+        <tr><th>Habla del host en cámara</th><th>Limpio</th><th>Con los reintentos de este episodio</th></tr>
+        <tr><td>15 s</td><td>~105 créditos · ~USD 5,10</td><td>~236 créditos · ~USD 11,60</td></tr>
+        <tr><td>30 s</td><td>~210 créditos · ~USD 10,30</td><td>~470 créditos · ~USD 23,00</td></tr>
+      </table>
+      <p class="meta">Fórmula: 7 créditos × segundos del host + ~0,5 por línea de audio. El co-host y el resto de la producción no suman créditos de Higgsfield.</p>
+
+      <h3 style="margin-top:20px;">Cómo gastar menos</h3>
+      <ul>
+        <li><strong>Que hable más el co-host y menos el host:</strong> sus turnos son casi gratis.</li>
+        <li><strong>Verificar la fuente antes de generar:</strong> un fotograma comparado con una salida buena (Hallazgo 6).</li>
+        <li><strong>Aprobar el audio antes del lipsync:</strong> transcribirlo y revisar la cola (Hallazgo 7).</li>
+        <li><strong>Subtítulos antes que doblaje:</strong> tres idiomas por 0 créditos (Hallazgo 8).</li>
+        <li><strong>Reutilizar una sola generación de música</strong> para apertura, cierre y vertical (Hallazgo 9).</li>
+        <li><strong>Probar con un clip corto</strong> lo que no tiene cotización previa (<code>upscale_video</code> y <code>dubbing</code> no permiten consultar el costo antes de generar).</li>
+      </ul>
+      <p class="meta">
+        Los precios de los planes son los que pagamos hoy y pueden cambiar; el valor por crédito es el precio del
+        plan dividido por sus créditos mensuales. Los créditos de Higgsfield no son dólares gastados de más: el plan
+        se paga igual, lo que cambia es cuánto del mes queda para el siguiente contenido.
+      </p>
+    </div>
+  </section>
+
   <section class="section" id="stack">
     <div class="section-card">
       <h2 class="section-title">Stack — no todo es "una IA que genera video"</h2>
@@ -407,6 +577,9 @@ ffmpeg -i salida.mp4 -t &lt;silence_start&gt; -c:v libx264 -c:a aac final_en.mp4
         <tr><td><strong><code>faststart</code> / átomo <code>moov</code></strong></td><td>Metadata de un archivo <code>.mp4</code> que debe ir al principio del archivo (no al final) para que un navegador pueda reproducirlo progresivamente, especialmente en mobile. Ver el fix aplicado a los videos de esta misma página.</td></tr>
         <tr><td><strong><code>silencedetect</code></strong></td><td>Filtro de ffmpeg que detecta tramos de silencio en un audio — usado acá para ubicar dónde recortar un doblaje que terminó antes que el video.</td></tr>
         <tr><td><strong>whisper.cpp</strong></td><td>Motor de transcripción (usado vía el filtro nativo <code>whisper</code> de ffmpeg) para verificar por escrito el contenido real de un audio generado, en vez de confiar solo en escucharlo.</td></tr>
+        <tr><td><strong>Co-host sintético</strong></td><td>Segunda voz de un podcast generada con <code>seed_audio</code> (voz preestablecida), que no tiene cara propia: mientras habla, el video muestra al host escuchando. Solo el host en cámara paga lipsync.</td></tr>
+        <tr><td><strong>Reaction cutaway</strong></td><td>Clip de "escucha" armado con ffmpeg: un solo fotograma del host en bucle durante la duración del audio del co-host. Gratis y sin riesgo de que los labios del host se muevan con la voz equivocada.</td></tr>
+        <tr><td><strong>Cortinilla</strong></td><td>Pieza musical corta (5 a 10 s) de apertura o cierre de un episodio, sin voces, con espacio limpio al final para que entre la voz.</td></tr>
         <tr><td><strong>Virality Predictor</strong></td><td>Herramienta de Higgsfield que analiza un video ya existente y devuelve un dashboard de potencial de viralidad/engagement — no genera contenido.</td></tr>
       </table>
     </div>
@@ -428,6 +601,18 @@ ffmpeg -i salida.mp4 -t &lt;silence_start&gt; -c:v libx264 -c:a aac final_en.mp4
         <div class="card">
           <h3>Recortar en vez de regenerar</h3>
           <p>Ante el defecto de duración fija del doblaje, la opción "barata" era regenerar con más créditos esperando que se arreglara solo — se decidió no hacerlo sin evidencia de que ayudaría, probarlo primero (no ayudó) y resolverlo con edición determinística.</p>
+        </div>
+        <div class="card">
+          <h3>Nombre y marca del podcast</h3>
+          <p>El agente propuso tres nombres con la idea de "la bandada" y una paleta tomada de Sentientum; se eligió «Vuelo en Bandada» por ser corto y describir el formato de conversación. El cargo en el pie y la pregunta final también son decisión editorial, no del modelo.</p>
+        </div>
+        <div class="card">
+          <h3>Fondo de marca en vez de recorte vertical</h3>
+          <p>Se probó el recorte a pantalla completa y se mostró un fotograma. Se descartó por nitidez y por perder el micrófono, y se eligió el layout con fondo de marca después de verlo en el celular.</p>
+        </div>
+        <div class="card">
+          <h3>No doblar todavía</h3>
+          <p>Con la cotización en mano (unos 133 créditos por idioma, con labios que seguirían en español si solo se usa audio de Artlist), se decidió usar los créditos restantes en contenido nuevo y mantener subtítulos para inglés y portugués.</p>
         </div>
         <div class="card">
           <h3>Repositorio y visibilidad</h3>
