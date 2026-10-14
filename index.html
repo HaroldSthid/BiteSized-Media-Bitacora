@@ -17,6 +17,7 @@
       <a href="#hallazgos">Hallazgos</a>
       <a href="#videos">Videos</a>
       <a href="#episodio">Episodio 2</a>
+      <a href="#episodio3">Episodio 3</a>
       <a href="#costos">Costos</a>
       <a href="#stack">Stack</a>
       <a href="#glosario">Glosario</a>
@@ -456,6 +457,126 @@ ffmpeg -i salida.mp4 -t &lt;silence_start&gt; -c:v libx264 -c:a aac final_en.mp4
     </div>
   </section>
 
+  <section class="section" id="episodio3">
+    <div class="section-card">
+      <h2 class="section-title">Tercer caso: «Scapder, líneas específicas de IA» (vertical, 74 s)</h2>
+      <p class="meta">Un video vertical estilo podcast adaptado de una referencia de TikTok: arranca en Scapder, explica Sentientum y Edge Sight AI, y cierra con la idea que las une.</p>
+      <p>
+        La idea que ordena el guion es que Scapder no vende "IA genérica": elige <strong>líneas específicas</strong>
+        de inteligencia artificial y se especializa en ellas, lo que permite profundizar y ofrecer soluciones a la
+        medida. Sentientum (audiencias sintéticas y simulación predictiva) es la protagonista; Edge Sight AI
+        (visión por computador para el sector industrial, instalada sobre las cámaras existentes) es la segunda
+        línea. El formato es híbrido: el host aparece hablando a cámara (~11 s, con lipsync) y el resto es voz en
+        off sobre tarjetas de marca, capturas reales de la plataforma, pantalla dividida y la mascota Pixel.
+      </p>
+
+      <div class="grid two" style="margin-top:16px;">
+        <div class="card">
+          <span class="eyebrow">Versión en español (9:16)</span>
+          <div class="video-frame">
+            <video controls preload="metadata" src="videos/scapder_sentientum_9x16_es.mp4"></video>
+          </div>
+          <details class="video-caption">
+            <summary class="meta">Ficha técnica ▾</summary>
+            <p class="meta">
+              73,6 s, 1080×1920 a 30 fps (aquí recomprimido a 720×1280). Tres tramos con lipsync y seis de voz en off.
+              Subtítulos palabra por palabra quemados, música instrumental generada (Lyria 3 Pro) con bajada
+              automática bajo la voz, tarjeta final con Pixel.
+            </p>
+          </details>
+        </div>
+        <div class="card">
+          <span class="eyebrow">Versión en portugués (9:16)</span>
+          <div class="video-frame">
+            <video controls preload="metadata" src="videos/scapder_sentientum_9x16_pt.mp4"></video>
+          </div>
+          <details class="video-caption">
+            <summary class="meta">¿Qué cambia respecto al español? ▾</summary>
+            <p class="meta">
+              Solo texto: subtítulos, tarjetas, globo de Pixel y capturas de la interfaz en portugués. El audio sigue
+              en español (convención del proyecto, ver Hallazgo 8). Las traducciones son borradores a revisar por
+              una persona nativa. La versión en inglés está lista en código y espera las capturas de la interfaz en inglés.
+            </p>
+          </details>
+        </div>
+      </div>
+
+      <div class="finding">
+        <span class="verdict bad">✗ No funcionó</span> <span class="verdict ok">→ corregido</span>
+        <h3>10. Lipsync desde una imagen fija sale mal; desde un clip, bien</h3>
+        <p>
+          Con una imagen de estudio y <code>generate_audio=false</code> la sincronía fue pobre. Lo que funcionó:
+          pasar un clip real o ya generado como <code>video_references</code>, el audio como
+          <code>audio_references</code> y <code>generate_audio: true</code> (<code>seedance_2_5</code>
+          <code>omni_reference</code>, ~7 créditos por segundo). La duración pedida no debe superar la del clip fuente.
+        </p>
+      </div>
+
+      <div class="finding">
+        <span class="verdict warn">⚠ Parcial</span>
+        <h3>11. El audio que genera el modelo de lipsync se degrada después de ~3 s</h3>
+        <p>
+          En una de las tomas la voz salió entendible solo los primeros segundos. Usamos el clip únicamente los
+          2,25 s buenos y empalmamos la voz limpia en la pausa natural de la frase. Pero la regla no es universal:
+          pegar la voz limpia sobre los otros dos clips <em>desincronizó</em> labios que ya estaban perfectos, así que
+          ahí se conservó el audio del modelo. Se decide toma por toma, escuchando, no con una receta única.
+        </p>
+      </div>
+
+      <div class="finding">
+        <span class="verdict bad">✗ No funcionó</span> <span class="verdict ok">→ corregido</span>
+        <h3>12. El "ruido de interferencia" eran clics y colas de <code>seed_audio</code></h3>
+        <p>
+          En el segundo 32 se oía una interferencia. La causa estaba en la voz: una cola alucinada de fragmentos
+          tras "pregunta" (7,7–8,1 s) y una "El" tartamudeada con tres clics al inicio de la frase siguiente. Los
+          detectores simples de clics no la encontraron; los <strong>espectrogramas</strong> sí. Arreglo: recortar la
+          cola, regenerar solo esa frase (3 tomas, se eligió la de palabras correctas), quitar 0,05 s de clic inicial
+          y poner fundidos de 30–50 ms en cada empalme. Es la ampliación del Hallazgo 7: verificar el audio también
+          mirando, no solo transcribiendo.
+        </p>
+      </div>
+
+      <div class="finding">
+        <span class="verdict ok">✓ Adoptado</span>
+        <h3>13. Formato híbrido: el host en cámara solo donde aporta</h3>
+        <p>
+          Se planeó ~25 s de cabeza hablante y se terminó en ~11,4 s; el resto es voz en off. Cada segundo en cámara
+          cuesta ~7 créditos y el resto del video (tarjetas, capturas, pantalla dividida, Pixel, subtítulos) es
+          código local, sin créditos. Las tres apariciones del host abren, bisagran y cierran el mensaje.
+        </p>
+      </div>
+
+      <div class="finding">
+        <span class="verdict ok">✓ Adoptado</span>
+        <h3>14. Subtítulos palabra por palabra anclados a silencios reales</h3>
+        <p>
+          La palabra activa se resalta en el color de acento. Los tiempos no salen de la transcripción (poco fiable en
+          segmentos con música) sino de los tramos de voz que detecta <code>silencedetect</code>, repartiendo las
+          palabras de cada frase por número de sílabas. Cada idioma tiene su propia lista de frases sobre los mismos
+          tiempos, y si falta un recurso de ese idioma (por ejemplo una captura) la compilación de esa versión se omite
+          en vez de salir mal.
+        </p>
+      </div>
+
+      <div class="finding">
+        <span class="verdict warn">⚠ Parcial</span>
+        <h3>15. Recursos con límites: el logo de 164 px y la música del catálogo</h3>
+        <p>
+          El único logo disponible era un PNG blanco de 164×61 px; ampliado a pantalla se veía borroso. Se reescaló
+          localmente (alfa a 10× y umbral) hasta 1640×610 px, suficiente para tarjetas; lo correcto a futuro es pedir
+          el vector. La música del catálogo de Artlist no se puede descargar desde el MCP (solo generar), así que se
+          generó una pista instrumental con Lyria 3 Pro (300 créditos de Artlist, 84,7 s) en vez de reutilizar los
+          30 s del Hallazgo 9.
+        </p>
+      </div>
+
+      <p class="meta">
+        Costo aproximado de este video: ~200 créditos de Higgsfield (casi todo en pruebas y tomas de lipsync) y 300 de
+        Artlist (música). Ensamblado, subtítulos y versiones por idioma: 0 créditos.
+      </p>
+    </div>
+  </section>
+
   <section class="section" id="costos">
     <div class="section-card">
       <h2 class="section-title">Costos: cuánto cuesta producir una pieza</h2>
@@ -489,6 +610,10 @@ ffmpeg -i salida.mp4 -t &lt;silence_start&gt; -c:v libx264 -c:a aac final_en.mp4
         <tr><td>&nbsp;&nbsp;de eso, reintentos (fuente equivocada, alucinaciones, regeneraciones)</td><td>~427</td><td>~20,90</td></tr>
         <tr><td>Artlist, cortinilla</td><td>150</td><td>~0,15</td></tr>
       </table>
+      <p class="meta">
+        Tercer caso («Scapder, líneas específicas de IA»): ~200 créditos de Higgsfield (~USD 10) y 300 de Artlist
+        (~USD 0,30). El formato híbrido de voz en off mantuvo el tiempo del host en cámara en ~11 s.
+      </p>
       <p>
         El episodio consumió el <strong>77% del mes</strong> de Higgsfield, y <strong>más de la mitad se fue en
         reintentos</strong>. El costo que importa para planear no es el del episodio limpio, sino el que
@@ -613,6 +738,14 @@ ffmpeg -i salida.mp4 -t &lt;silence_start&gt; -c:v libx264 -c:a aac final_en.mp4
         <div class="card">
           <h3>No doblar todavía</h3>
           <p>Con la cotización en mano (unos 133 créditos por idioma, con labios que seguirían en español si solo se usa audio de Artlist), se decidió usar los créditos restantes en contenido nuevo y mantener subtítulos para inglés y portugués.</p>
+        </div>
+        <div class="card">
+          <h3>Mensaje: especialización, no IA genérica</h3>
+          <p>La idea que une el video del tercer caso la fijó la dirección: Scapder elige líneas específicas de IA para profundizar y dar soluciones a la medida. También se decidió hablar del sector industrial en general y no nombrar clientes.</p>
+        </div>
+        <div class="card">
+          <h3>Qué toma de voz queda</h3>
+          <p>Elegir entre el audio del modelo y la voz limpia, o entre tres regeneraciones de una frase, fue una escucha humana toma por toma. Ningún umbral automático lo habría resuelto.</p>
         </div>
         <div class="card">
           <h3>Repositorio y visibilidad</h3>
