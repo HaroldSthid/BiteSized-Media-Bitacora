@@ -18,6 +18,7 @@
       <a href="#videos">Videos</a>
       <a href="#episodio">Episodio 2</a>
       <a href="#episodio3">Episodio 3</a>
+      <a href="#episodio4">Episodio 4</a>
       <a href="#costos">Costos</a>
       <a href="#stack">Stack</a>
       <a href="#glosario">Glosario</a>
@@ -44,7 +45,9 @@
       <span class="pill">omni_reference</span>
       <span class="pill">dubbing</span>
       <span class="pill">ffmpeg</span>
-      <span class="pill">whisper.cpp</span>
+      <span class="pill">whisper.cpp</span>      <span class="pill">Artlist</span>
+      <span class="pill">Buffer MCP</span>
+
     </div>
   </section>
 
@@ -577,6 +580,169 @@ ffmpeg -i salida.mp4 -t &lt;silence_start&gt; -c:v libx264 -c:a aac final_en.mp4
     </div>
   </section>
 
+  <section class="section" id="episodio4">
+    <div class="section-card">
+      <h2 class="section-title">Cuarto caso: «70 horas» (video, carrusel y blog para LinkedIn)</h2>
+      <p class="meta">Un mismo experimento contado en tres piezas, con una voz estándar, fotos reales recortadas con código y publicaciones programadas desde el agente.</p>
+      <p>
+        La pregunta de prueba: «me ofrecen un trabajo de 70 horas semanales, ¿acepto o elijo un ritmo moderado?». Un
+        panel de agentes sintéticos de Sentientum respondió todo lo mismo, y al contar qué había pasado de verdad el
+        resultado fue 98 acciones, 97 posts sueltos, 1 «me gusta» y <strong>0 respuestas de un agente a otro</strong>: no
+        era consenso, eran monólogos. Con esa historia se armó un <strong>ciclo de tres publicaciones</strong>: un video
+        vertical (el gancho, ~56 s), un carrusel «¿Qué es Sentientum?» (qué es el producto) y un blog (la historia
+        completa con los datos). Salen en LinkedIn entre el 3 y el 10 de noviembre de 2026; el video y el carrusel se
+        agregarán aquí cuando estén publicados.
+      </p>
+
+      <div class="grid two" style="margin-top:16px;">
+        <div class="card">
+          <span class="eyebrow">El blog (pieza 3)</span>
+          <h3>El relato completo, en español e inglés</h3>
+          <p>
+            Página estática con las tres figuras, los intercambios textuales de los agentes y narración en audio.
+            <a href="https://haroldsthid.github.io/sentientum-70-horas/" target="_blank" rel="noopener">Abrir el relato ↗</a>
+          </p>
+        </div>
+        <div class="card">
+          <span class="eyebrow">Cómo se reparte</span>
+          <h3>Gancho, producto, datos</h3>
+          <p>
+            El video cuenta la historia en 56 s; el carrusel explica qué es Sentientum sin repetirla; el blog trae las
+            cifras y las conversaciones reales. Cada pieza lleva a la siguiente con la misma pregunta final.
+          </p>
+        </div>
+      </div>
+
+      <div class="finding">
+        <span class="verdict ok">✓ Adoptado</span>
+        <h3>16. Una voz estándar en español: Artlist «Norah» (Eleven v3), no un preset de Higgsfield</h3>
+        <p>
+          El clon de voz del autor no fluía con el texto del video y se pidió probar voces estándar. El preset «Ines» de
+          Higgsfield (<code>seed_audio</code>) sonó bien en una línea larga, pero mezclaba fonética inglesa: tras tres
+          intentos solo 7 de las 14 líneas del guion salieron limpias («setenta» como «sete», «muchas voces» como
+          «muchachos»). En Artlist las voces multilingües arrancan en inglés: con texto en español hay que pasar
+          <code>settings: {"language": "Spanish"}</code>. «Norah» es la única voz del catálogo con acento
+          latinoamericano y sus 14 líneas salieron limpias en la primera toma según la transcripción (4 a 19 créditos cada una). La lección
+          general: probar la voz con las líneas más difíciles del guion, no con una frase cómoda.
+        </p>
+      </div>
+
+      <div class="finding">
+        <span class="verdict warn">⚠ Parcial</span>
+        <h3>17. whisper no es el árbitro de una voz con acento</h3>
+        <p>
+          <code>whisper</code> (modelo medium) transcribió mal fragmentos largos con acento latinoamericano: nombres
+          propios («Jev» como «Jeff»), números escritos en palabras y frases enteras. Servía para detectar cortes y colas
+          alucinadas al final, pero no para aprobar o rechazar la voz: eso lo decidió escucharla. Extiende los Hallazgos
+          7 y 12: transcribir verifica que no falte nada, no que suene bien.
+        </p>
+      </div>
+
+      <div class="finding">
+        <span class="verdict ok">✓ Adoptado</span>
+        <h3>18. La voz se perdía bajo la música: compresión, y un <code>alimiter</code> que hay que configurar</h3>
+        <p>
+          Las voces crudas salen a −25…−31 dB de media con picos de 17–21 dB, casi al nivel de la música. Cadena
+          adoptada: compresor por línea (<code>acompressor</code>), ganancia a −21 dB de media, limitador, y música a
+          <code>volume=0.11</code> con <code>sidechaincompress</code> (la música baja unos 10 dB mientras habla la voz).
+          La trampa: <code>alimiter</code> renormaliza a 0 dB por defecto y recorta la mezcla; hay que pasar
+          <code>level=0</code>. Resultado: −22 a −23 dB de media y −1 a −4 dB de pico.
+        </p>
+      </div>
+
+      <div class="finding">
+        <span class="verdict ok">✓ Adoptado</span>
+        <h3>19. Un guion debe entenderse sin conocer el experimento: decir lo literal</h3>
+        <p>
+          Dos recursos confundían a un espectador que llega sin contexto: «un resultado es una moneda tirada una vez» y
+          «cero respuestas». Se reemplazaron por frases literales («nadie le contestó a nadie»; «si una simulación te da
+          la razón, pregunta cuántas voces se respondieron de verdad»). Las cifras y los matices pasaron al texto del
+          post. Solo se regeneraron las tres líneas afectadas.
+        </p>
+      </div>
+
+      <div class="finding">
+        <span class="verdict ok">✓ Adoptado</span>
+        <h3>20. Recorte «tipo revista» hecho con código</h3>
+        <p>
+          Para las fotos del autor se pidió un recorte con borde blanco grueso. Receta: quitar el fondo con un
+          removedor, quedarse con el componente conexo más grande del canal alfa (descarta restos y «fantasmas»),
+          dilatar 15 px, simplificar el contorno con <code>approxPolyDP</code> (bordes como cortados con tijera), relleno
+          blanco, sombra desenfocada e inclinación de 2 a 3°. En retratos de busto se redondea el corte de los hombros y
+          la figura sale por el borde inferior para que el borde no se cierre debajo. Una foto con un parlante delante de
+          las piernas dejó restos en el recorte y se descartó.
+        </p>
+      </div>
+
+      <div class="finding">
+        <span class="verdict warn">⚠ Parcial</span>
+        <h3>21. Editar caras con IA: expresión y pose, sí; «más joven», no</h3>
+        <p>
+          Con GPT Image 2.5 (en Artlist) se cambió solo la expresión de una foto real a una sonrisa sutil y quedó
+          natural; Nano Banana Pro cambió además la inclinación de la cabeza. Pedir «más juvenil» con dos fotos de
+          referencia adelgazó la cara y acortó la barba: se descartó por alejarse de la persona real. Lo que mejor
+          funcionó fue lo contrario: usar una selfie real sonriendo como portada. Para una pose nueva, una selfie como
+          identidad más una miniatura ajena como referencia de pose (sin copiar su cara ni su ropa) dio un resultado fiel.
+          Regla: manda la foto real; la IA solo toca expresión o pose, se compara lado a lado y lo aprueba la persona
+          retratada.
+        </p>
+      </div>
+
+      <div class="finding">
+        <span class="verdict ok">✓ Adoptado</span>
+        <h3>22. LinkedIn no incrusta páginas: el blog es una página estática con tarjeta Open Graph</h3>
+        <p>
+          Un artículo largo con figuras y audio no se puede incrustar en un post. Se publicó el relato como página
+          estática en GitHub Pages (solo la vista narrativa, sin la vista de datos) y se enlaza desde un post: LinkedIn
+          muestra una tarjeta construida con las etiquetas <code>og:title</code>, <code>og:description</code> y
+          <code>og:image</code> (imagen de 1200×630). Al regenerar el audio hay que actualizar también la duración que
+          muestra cada botón, que estaba fija en el HTML. LinkedIn guarda la tarjeta en caché: si luego cambia el título
+          o la imagen, hay que refrescarla en su Post Inspector.
+        </p>
+      </div>
+
+      <div class="finding">
+        <span class="verdict warn">⚠ Parcial</span>
+        <h3>23. Programar con el MCP de Buffer: lo que no está en el manual</h3>
+        <ul>
+          <li>Solo acepta medios con <strong>URL pública</strong>; un archivo local no se adjunta. Se resolvió subiendo cada archivo (video, PDF, imagen) a la biblioteca de Higgsfield, que devuelve una URL de CDN.</li>
+          <li>Un <strong>carrusel de LinkedIn es un PDF</strong> adjunto como documento. La API devuelve <code>numPages: 0</code> hasta que se abre en Buffer; no es un error.</li>
+          <li>Un borrador con fecha <strong>sigue siendo borrador</strong>: para programarlo hay que pasar <code>saveToDraft: false</code>.</li>
+          <li>Editar vuelve a validar el post completo: se reenvían el texto y los adjuntos.</li>
+          <li>El primer comentario de LinkedIn exige un plan de pago.</li>
+        </ul>
+      </div>
+
+      <div class="finding">
+        <span class="verdict ok">✓ Adoptado</span>
+        <h3>24. No declarar un fallo desde un fotograma a medias</h3>
+        <p>
+          Una tarjeta del video mostraba «0 me gusta» y se sospechó un error de cifras. El código ya tenía el 1 correcto:
+          el fotograma se había tomado durante la animación del contador. Antes de reportar un fallo visual se comparan
+          las cifras con la fuente (el artifact publicado) y se mira el fotograma final.
+        </p>
+      </div>
+
+      <div class="finding">
+        <span class="verdict warn">⚠ Parcial</span>
+        <h3>25. Cuando la web dice otra cosa que el post: retirar el enlace</h3>
+        <p>
+          La sección «Límites» de la web de Sentientum decía que los agentes aún no se responden, mientras el post
+          contaba la versión corregida. En vez de enlazar una página contradictoria se quitó el enlace de los posts y se
+          preparó un parche del texto (cinco reemplazos, en los tres idiomas). El código fuente de esa web no estaba en
+          ningún repositorio ni disco a mano, así que el despliegue quedó pendiente: documentar de dónde sale cada
+          sitio publicado también es parte del trabajo.
+        </p>
+      </div>
+
+      <p class="meta">
+        Costo aproximado de este caso: ~1.660 créditos de Artlist (~USD 1,66), casi la mitad en la narración del blog.
+        Los créditos de Higgsfield del mes se agotaron durante esta etapa (quedaban 0,9), por eso las ediciones de imagen
+        se hicieron en Artlist. Buffer y GitHub Pages: sin costo en los planes usados.
+      </p>
+    </div>
+  </section>
+
   <section class="section" id="costos">
     <div class="section-card">
       <h2 class="section-title">Costos: cuánto cuesta producir una pieza</h2>
@@ -599,6 +765,9 @@ ffmpeg -i salida.mp4 -t &lt;silence_start&gt; -c:v libx264 -c:a aac final_en.mp4
         <tr><td>Imagen, Nano Banana 2 (Higgsfield)</td><td>1,5 créditos</td></tr>
         <tr><td>Música generada, Artlist Lyria 3</td><td>150 créditos por 30 s (duración fija)</td></tr>
         <tr><td>Locución, Artlist (MiniMax)</td><td>55 créditos por ~44 s de texto</td></tr>
+        <tr><td>Locución, Artlist (Eleven v3, voz «Norah»)</td><td>~125 a 145 créditos por ~640 caracteres (~45 s); una línea corta, 4 a 19</td></tr>
+        <tr><td>Edición de imagen con referencia, Artlist (GPT Image 2.5 / Nano Banana Pro)</td><td>140 a 160 créditos por imagen</td></tr>
+        <tr><td>Quitar fondo, Artlist (Pixelcut)</td><td>30 créditos por imagen</td></tr>
         <tr><td>Subtítulos, tarjetas, versión vertical, ensamblado</td><td>0 créditos (whisper, Pillow y ffmpeg locales)</td></tr>
       </table>
 
@@ -620,6 +789,22 @@ ffmpeg -i salida.mp4 -t &lt;silence_start&gt; -c:v libx264 -c:a aac final_en.mp4
         trae el nivel de error que tuvimos.
       </p>
 
+      <h3 style="margin-top:20px;">Lo que costó el cuarto caso («70 horas»)</h3>
+      <table>
+        <tr><th>Concepto (Artlist)</th><th>Créditos</th><th>USD</th></tr>
+        <tr><td>Pruebas de voces en Artlist (5 generaciones, dos repetidas por el idioma)</td><td>95</td><td>~0,10</td></tr>
+        <tr><td>Narración del video: 14 líneas con «Norah»</td><td>112</td><td>~0,11</td></tr>
+        <tr><td>Ediciones de imagen: sonrisa (con dos modelos), «juvenil» (descartada) y pose</td><td>580</td><td>~0,58</td></tr>
+        <tr><td>Quitar fondo de tres imágenes</td><td>90</td><td>~0,09</td></tr>
+        <tr><td>Narración del blog: 6 fragmentos en español</td><td>780</td><td>~0,78</td></tr>
+        <tr><td><strong>Total</strong></td><td><strong>~1.657</strong></td><td><strong>~1,66</strong></td></tr>
+      </table>
+      <p class="meta">
+        Las pruebas de voces de Higgsfield, los recortes de las primeras fotos y las líneas con el preset «Ines» no están
+        en esta tabla: el historial de Higgsfield no se consolidó. Aun así, lo más caro fue la locución larga (se cobra por
+        carácter) y la edición de caras.
+      </p>
+
       <h3 style="margin-top:20px;">Cuánto costaría el siguiente segmento</h3>
       <table>
         <tr><th>Habla del host en cámara</th><th>Limpio</th><th>Con los reintentos de este episodio</th></tr>
@@ -635,6 +820,8 @@ ffmpeg -i salida.mp4 -t &lt;silence_start&gt; -c:v libx264 -c:a aac final_en.mp4
         <li><strong>Aprobar el audio antes del lipsync:</strong> transcribirlo y revisar la cola (Hallazgo 7).</li>
         <li><strong>Subtítulos antes que doblaje:</strong> tres idiomas por 0 créditos (Hallazgo 8).</li>
         <li><strong>Reutilizar una sola generación de música</strong> para apertura, cierre y vertical (Hallazgo 9).</li>
+        <li><strong>Probar una voz con una línea difícil</strong> antes de generar todo: la locución larga se cobra por carácter (Hallazgo 16).</li>
+        <li><strong>Cotizar con <code>get_generation_cost</code></strong> antes de cada generación de Artlist, y confirmar la voz con un solo fragmento.</li>
         <li><strong>Probar con un clip corto</strong> lo que no tiene cotización previa (<code>upscale_video</code> y <code>dubbing</code> no permiten consultar el costo antes de generar).</li>
       </ul>
       <p class="meta">
@@ -677,8 +864,19 @@ ffmpeg -i salida.mp4 -t &lt;silence_start&gt; -c:v libx264 -c:a aac final_en.mp4
         </div>
       </div>
 
+      <div class="grid two" style="margin-top:16px;">
+        <div class="card">
+          <h3>7. Imagen: recorte y edición</h3>
+          <p>Removedores de fondo (<code>remove_background</code> de Higgsfield, Pixelcut en Artlist), edición con referencia (GPT Image 2.5, Nano Banana Pro) y composición con <strong>Pillow</strong> (borde, sombra, recorte tipo revista). Edita expresión o pose; no reemplaza a la foto real (Hallazgo 21).</p>
+        </div>
+        <div class="card">
+          <h3>8. Publicación y programación</h3>
+          <p><strong>Buffer</strong> (vía MCP) para borradores y programación en LinkedIn, <strong>GitHub Pages</strong> para páginas estáticas y la biblioteca de Higgsfield como alojamiento de archivos con URL pública. No genera contenido: lo pone a circular, con fecha y hora (Hallazgo 23).</p>
+        </div>
+      </div>
+
       <p style="margin-top:16px;">
-        La confusión típica es tratar estas seis categorías como una sola "IA de video". No lo son: una
+        La confusión típica es tratar estas ocho categorías como una sola "IA de video". No lo son: una
         herramienta de identidad fija no reemplaza a una de marketing masivo, y ninguna de las dos mide
         si el resultado va a funcionar — para eso existe una tercera categoría (analítica), separada de
         la generación misma.
@@ -706,6 +904,12 @@ ffmpeg -i salida.mp4 -t &lt;silence_start&gt; -c:v libx264 -c:a aac final_en.mp4
         <tr><td><strong>Reaction cutaway</strong></td><td>Clip de "escucha" armado con ffmpeg: un solo fotograma del host en bucle durante la duración del audio del co-host. Gratis y sin riesgo de que los labios del host se muevan con la voz equivocada.</td></tr>
         <tr><td><strong>Cortinilla</strong></td><td>Pieza musical corta (5 a 10 s) de apertura o cierre de un episodio, sin voces, con espacio limpio al final para que entre la voz.</td></tr>
         <tr><td><strong>Virality Predictor</strong></td><td>Herramienta de Higgsfield que analiza un video ya existente y devuelve un dashboard de potencial de viralidad/engagement — no genera contenido.</td></tr>
+        <tr><td><strong>Open Graph (<code>og:</code>)</strong></td><td>Etiquetas en el HTML (título, descripción, imagen) que LinkedIn y otras redes leen para armar la tarjeta de vista previa de un enlace. Ver Hallazgo 22.</td></tr>
+        <tr><td><strong>Carrusel (LinkedIn)</strong></td><td>Un PDF adjunto como documento: cada página es una slide que se desliza. No es un conjunto de imágenes.</td></tr>
+        <tr><td><strong>Recorte tipo revista</strong></td><td>Figura recortada con borde blanco grueso, sombra y leve inclinación, como pegada sobre el fondo. Ver Hallazgo 20.</td></tr>
+        <tr><td><strong>Buffer (MCP)</strong></td><td>Herramienta de programación de publicaciones en redes; acá se opera desde el agente para crear borradores, programar y editar posts de LinkedIn.</td></tr>
+        <tr><td><strong>GitHub Pages</strong></td><td>Alojamiento gratuito de páginas estáticas desde un repositorio público; sirve a esta bitácora y al blog de «70 horas».</td></tr>
+        <tr><td><strong>Eleven v3</strong></td><td>Modelo de voz de Artlist usado para la narración. Las voces multilingües arrancan en inglés: para español hay que configurar el idioma. Ver Hallazgo 16.</td></tr>
       </table>
     </div>
   </section>
@@ -746,6 +950,26 @@ ffmpeg -i salida.mp4 -t &lt;silence_start&gt; -c:v libx264 -c:a aac final_en.mp4
         <div class="card">
           <h3>Qué toma de voz queda</h3>
           <p>Elegir entre el audio del modelo y la voz limpia, o entre tres regeneraciones de una frase, fue una escucha humana toma por toma. Ningún umbral automático lo habría resuelto.</p>
+        </div>
+        <div class="card">
+          <h3>Voz del narrador</h3>
+          <p>El agente probó seis voces estándar (tres de Higgsfield y tres de Artlist) y midió transcripciones, pero elegir «Norah» fue escucharla; el audio del blog también se aprobó escuchándolo antes de publicar.</p>
+        </div>
+        <div class="card">
+          <h3>Decir lo literal</h3>
+          <p>La metáfora de la moneda y el «cero respuestas» le parecieron confusos a quien dirige el contenido, que pidió reemplazarlos por frases directas. El agente propuso el texto; la decisión editorial fue humana.</p>
+        </div>
+        <div class="card">
+          <h3>Foto real antes que edición con IA</h3>
+          <p>Entre la selfie real y las versiones editadas ganó la real. Se descartó la versión «más joven» por alejarse de la persona, aunque el modelo la generó bien: lo que importa es que quien aparece se reconozca.</p>
+        </div>
+        <div class="card">
+          <h3>Ciclo de tres publicaciones</h3>
+          <p>Video como gancho, carrusel que explica el producto y blog con los datos; mismo perfil, 8:00, separadas de dos a siete días. Las fechas las fijó una persona y nada se programó sin su confirmación explícita.</p>
+        </div>
+        <div class="card">
+          <h3>Retirar el enlace a la web</h3>
+          <p>Al ver que la web decía algo distinto del post, se decidió quitar el enlace en vez de publicar una contradicción, y dejar el parche listo para cuando se sepa dónde se despliega.</p>
         </div>
         <div class="card">
           <h3>Repositorio y visibilidad</h3>
