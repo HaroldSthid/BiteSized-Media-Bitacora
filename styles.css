@@ -104,3 +104,15 @@ th { color: var(--muted); font-weight: 700; }
   h1 { font-size: 1.5rem; }
   .hero, .section-card { padding: 18px; }
 }
+
+/* LinkedIn strategy section */
+.tablewrap { overflow-x: auto; margin-top: 14px; }
+.tablewrap table { min-width: 640px; }
+.gridtbl th, .gridtbl td { vertical-align: top; border: 1px solid var(--border); }
+.gridtbl td:first-child, .gridtbl th:first-child { background: var(--surface-alt); width: 21%; }
+.gridtbl td ul { margin: 0; padding-left: 1.1em; }
+.gridtbl td li { margin: 6px 0; }
+.gridtbl .pill { margin-right: 4px; }
+.mbar { display: flex; align-items: center; gap: 8px; }
+.mbar i { display: block; height: 10px; background: var(--brand); border-radius: 0 3px 3px 0; }
+.mbar span { font-size: 0.82rem; }
