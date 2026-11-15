@@ -20,6 +20,7 @@
       <a href="#episodio3">Episodio 3</a>
       <a href="#episodio4">Episodio 4</a>
       <a href="#linkedin">LinkedIn</a>
+      <a href="#guardarrailes">Guardarraíles</a>
       <a href="#costos">Costos</a>
       <a href="#stack">Stack</a>
       <a href="#glosario">Glosario</a>
@@ -134,6 +135,15 @@
           Técnica adoptada: generar una extensión más larga de lo necesario, aislar la cola,
           y clonar una voz nueva solo de ese segmento — verificando siempre con una prueba
           de texto no relacionado antes de adoptarla.
+        </p>
+        <p class="meta">
+          <strong>Nota de corrección (14 de noviembre de 2026).</strong> Los casos 1 a 3 usaron la voz «v3», y así
+          queda escrito arriba. Una escucha y una medición posteriores la rechazaron: sonaba unos 20 Hz más aguda que la
+          voz real. La voz de referencia desde entonces es «Harold Sthid v4» (elemento de Higgsfield; f0 mediana de
+          ~113 a 125 Hz frente a ~116 Hz en la voz real), clonada directamente de una grabación real de ~3 minutos.
+          La voz «Edge Sight B» de Artlist se descartó por demasiado rápida. Además, el historial de trabajos de
+          Higgsfield no guarda ningún identificador de voz para las voces de elemento: la voz detrás de una pieza
+          publicada no se puede recuperar después y debe anotarse el mismo día.
         </p>
       </div>
 
@@ -1007,6 +1017,122 @@ Si viste el video y el carrusel, esta es la parte con los datos.
     </div>
   </section>
 
+  <section class="section" id="guardarrailes">
+    <div class="section-card">
+      <h2 class="section-title">Guardarraíles: menos errores y menos gasto, sin perder calidad</h2>
+      <p class="meta">Las reglas que salieron de los primeros cuatro casos, con los números del registro real.</p>
+      <p>
+        El sentido del proyecto es limitar los errores y el gasto en herramientas de pago sin perder calidad. Cada regla de
+        abajo nace de un fallo concreto de los casos anteriores y se mantiene en un playbook dentro del repositorio, para
+        leer la sección que corresponde antes de generar o publicar en vez de redescubrir el error.
+      </p>
+
+      <h3 style="margin-top:20px;">El ciclo de gasto</h3>
+      <ol>
+        <li><strong>Cotizar:</strong> pedir al proveedor el precio de la llamada exacta.</li>
+        <li><strong>Registrar la cotización</strong> (modelo, ajustes, créditos y fecha).</li>
+        <li><strong>Aprobación explícita</strong> de la persona dueña de la cuenta; nunca se aprueba en su nombre.</li>
+        <li><strong>Comprobar antes de llamar</strong> que la cotización existe, está aprobada y no venció.</li>
+        <li><strong>Registrar el resultado</strong>, aunque se rechace: un resultado descartado también cuesta.</li>
+        <li><strong>Registrar el saldo</strong> después de cada paso de pago.</li>
+      </ol>
+      <p class="meta">
+        Límite honesto: el guardarraíl es un registro más una regla de trabajo. Las llamadas de generación pasan por una
+        sesión MCP que el código no puede bloquear, así que ningún script impide el gasto por sí solo. El registro se
+        agregó el 14 de noviembre de 2026 y arranca vacío: todavía no tiene historia.
+      </p>
+
+      <div class="finding">
+        <span class="verdict ok">✓ Adoptado</span>
+        <h3>26. Cotizar antes de cada llamada de pago, y recordar que las cotizaciones vencen</h3>
+        <p>
+          Un talking head de 7 s cuesta entre ~1.350 y ~3.500 créditos, y un render de 12 s de Seedance en 1080p se cotizó
+          en 6.400. Esa cotización de 6.400 créditos venció a los 7 días: un precio visto una vez no sirve para una llamada
+          posterior.
+        </p>
+        <p>
+          <strong>Regla:</strong> cotizar con <code>get_generation_cost</code> antes de <em>cada</em> llamada de pago y pedir
+          aprobación explícita. <strong>Cómo se comprueba:</strong> existe una línea de cotización (modelo, ajustes,
+          créditos, fecha) antes de la llamada.
+        </p>
+      </div>
+
+      <div class="finding">
+        <span class="verdict bad">✗ No funcionó</span> <span class="verdict ok">→ corregido</span>
+        <h3>27. Un resultado rechazado también se cobra: probar UN clip antes de un lote</h3>
+        <p>
+          Hacer lipsync sobre un clip fuente equivocado (parecía el correcto por nombre y duración) gastó ~246 créditos, y una
+          voz que después se rechazó costó ~43.
+        </p>
+        <p>
+          <strong>Regla:</strong> antes de gastar sobre una fuente, extraer un fotograma y compararlo con una salida buena;
+          iterar en el audio, que casi no cuesta, y hacer lipsync solo de un audio que ya se transcribe limpio; probar un solo
+          clip antes de lanzar un lote. <strong>Cómo se comprueba:</strong> el fotograma quedó comparado y la línea cruda se
+          transcribió limpia antes de cualquier gasto en video.
+        </p>
+      </div>
+
+      <div class="finding">
+        <span class="verdict ok">✓ Adoptado</span>
+        <h3>28. Primero el audio, después el video, y pedir el techo de la duración para recortar</h3>
+        <p>
+          Con el video generado primero (12 s) y la voz después (7,08 s), los labios quedaron desincronizados (Hallazgo 3).
+          Además, los modelos de video de Artlist aceptan duraciones enteras.
+        </p>
+        <p>
+          <strong>Regla:</strong> medir la voz antes de generar y anclar el video a ese número; pedir siempre el entero
+          superior (nunca el inferior) y recortar después; si el margen es menor de 1 s, pedir un segundo más.
+          <strong>Cómo se comprueba:</strong> la duración pedida es mayor o igual que la voz más el margen, y existe un plan
+          de duración antes de generar el video.
+        </p>
+      </div>
+
+      <div class="finding">
+        <span class="verdict ok">✓ Adoptado</span>
+        <h3>29. Verificar por segmento y con una persona escuchando: whisper solo no es el juez</h3>
+        <p>
+          La transcripción del episodio armado se saltó tramos y transcribió mal turnos que estaban limpios; con una voz
+          clonada o con acento, whisper se equivoca aun sobre audio correcto (Hallazgo 17). Un fotograma tampoco prueba el
+          lipsync.
+        </p>
+        <p>
+          <strong>Regla:</strong> cortar cada segmento del resultado final y transcribirlo por separado, sin la música
+          mezclada; la escucha de una persona es la comprobación real, y un clip no cuenta como aceptado hasta que alguien lo
+          mira. <strong>Cómo se comprueba:</strong> queda registrado el veredicto de quien escuchó.
+        </p>
+      </div>
+
+      <div class="finding">
+        <span class="verdict ok">✓ Adoptado</span>
+        <h3>30. Un borrador de Buffer nunca se publica, ni con fecha; y los medios deben seguir en una URL pública hasta enviar</h3>
+        <p>
+          Un post con fecha pero guardado como borrador no sale (Hallazgo 23). Buffer tampoco acepta archivos locales: los
+          medios tienen que estar en una URL pública.
+        </p>
+        <p>
+          <strong>Regla:</strong> para programar hay que pasar <code>saveToDraft: false</code>, y el medio se mantiene en su
+          URL pública hasta que el post se haya enviado. <strong>Cómo se comprueba:</strong> después de programar, el estado
+          es <code>scheduled</code> o <code>sent</code>, nunca <code>draft</code>.
+        </p>
+      </div>
+
+      <div class="finding">
+        <span class="verdict warn">⚠ Parcial</span>
+        <h3>31. Anotar el mismo día qué voz hizo cada pieza publicada</h3>
+        <p>
+          El historial de trabajos de Higgsfield no guarda ningún identificador de voz para las voces de elemento, de modo
+          que la voz detrás de una pieza ya publicada no se puede recuperar. Por eso la bitácora llegó a nombrar la voz
+          equivocada (ver la nota del Hallazgo 2).
+        </p>
+        <p>
+          <strong>Regla:</strong> escribir la voz en el archivo de voces del repositorio el mismo día y antes de publicar.
+          <strong>Cómo se comprueba:</strong> hay una entrada por cada pieza publicada. Hoy la comprobación es manual; la
+          verificación automática sigue pendiente.
+        </p>
+      </div>
+    </div>
+  </section>
+
   <section class="section" id="costos">
     <div class="section-card">
       <h2 class="section-title">Costos: cuánto cuesta producir una pieza</h2>
@@ -1027,6 +1153,8 @@ Si viste el video y el carrusel, esta es la parte con los datos.
         <tr><td><code>dubbing</code> (traducir y resincronizar labios)</td><td>~24 créditos por 8 s de video</td></tr>
         <tr><td>Video multi-ángulo, <code>kling3_0</code></td><td>4,5 a 10,5 créditos</td></tr>
         <tr><td>Imagen, Nano Banana 2 (Higgsfield)</td><td>1,5 créditos</td></tr>
+        <tr><td>Audio, <code>seed_audio</code>, líneas de la jornada técnica</td><td>~1,4 créditos por línea</td></tr>
+        <tr><td>Locución, Artlist («Norah»), por carácter</td><td>~0,2 créditos por carácter</td></tr>
         <tr><td>Música generada, Artlist Lyria 3</td><td>150 créditos por 30 s (duración fija)</td></tr>
         <tr><td>Locución, Artlist (MiniMax)</td><td>55 créditos por ~44 s de texto</td></tr>
         <tr><td>Locución, Artlist (Eleven v3, voz «Norah»)</td><td>~125 a 145 créditos por ~640 caracteres (~45 s); una línea corta, 4 a 19</td></tr>
@@ -1067,6 +1195,20 @@ Si viste el video y el carrusel, esta es la parte con los datos.
         Las pruebas de voces de Higgsfield, los recortes de las primeras fotos y las líneas con el preset «Ines» no están
         en esta tabla: el historial de Higgsfield no se consolidó. Aun así, lo más caro fue la locución larga (se cobra por
         carácter) y la edición de caras.
+      </p>
+
+      <h3 style="margin-top:20px;">Lo que costó una jornada de producción técnica (8 de noviembre de 2026)</h3>
+      <table>
+        <tr><th>Concepto</th><th>Créditos</th><th>USD</th></tr>
+        <tr><td>Higgsfield: 5 clips, 5 ganchos, 5 animaciones con Kling, imágenes y líneas de prueba</td><td>~700</td><td>no consolidado</td></tr>
+        <tr><td>Artlist, narración con «Norah»</td><td>~860</td><td>~0,86</td></tr>
+        <tr><td>&nbsp;&nbsp;de eso, una voz rechazada</td><td>43</td><td>~0,04</td></tr>
+        <tr><td>Artlist, resto de la jornada (por diferencia)</td><td>~190</td><td>~0,19</td></tr>
+        <tr><td><strong>Artlist, total</strong></td><td><strong>~1.050</strong></td><td><strong>~1,05</strong></td></tr>
+      </table>
+      <p class="meta">
+        Son piezas técnicas, aún sin publicar. El valor en USD de los créditos de Higgsfield de esta jornada no se
+        consolidó, por eso no se escribe una cifra; los de Artlist usan el valor por crédito de la tabla de arriba.
       </p>
 
       <h3 style="margin-top:20px;">Cuánto costaría el siguiente segmento</h3>
@@ -1157,7 +1299,7 @@ Si viste el video y el carrusel, esta es la parte con los datos.
         <tr><td><strong>CAMEO</strong></td><td>Clip de video real y corto (grabado, no generado) usado como referencia de identidad/voz/movimiento para una generación posterior.</td></tr>
         <tr><td><strong><code>omni_reference</code></strong></td><td>Modo de <code>seedance_2_5</code> que extiende un CAMEO real más allá de su propia duración: dobla fielmente hasta el límite real, y genera libremente después. Ver Hallazgo 2.</td></tr>
         <tr><td><strong>Voice Element / clonación de voz</strong></td><td>Voz sintética entrenada desde una muestra de audio real (<code>create_voice_from_confirmed_audio</code>), reutilizable luego vía <code>seed_audio</code>.</td></tr>
-        <tr><td><strong>"Tail-mining"</strong></td><td>Término interno (no de Higgsfield) para la técnica de aislar la cola de generación libre de un <code>omni_reference</code> y clonar una voz nueva solo de ese segmento — la fuente de la voz "v3".</td></tr>
+        <tr><td><strong>"Tail-mining"</strong></td><td>Término interno (no de Higgsfield) para la técnica de aislar la cola de generación libre de un <code>omni_reference</code> y clonar una voz nueva solo de ese segmento — la fuente de la voz "v3". Corrección posterior: esa voz se rechazó por unos 20 Hz demasiado aguda y la voz de referencia pasó a ser «Harold Sthid v4», clonada de una grabación real de ~3 minutos (ver la nota del Hallazgo 2).</td></tr>
         <tr><td><strong><code>dubbing</code></strong></td><td>Herramienta de Higgsfield que traduce el audio real de un video y resincroniza labios, preservando la voz original del hablante — no es TTS ni clonación.</td></tr>
         <tr><td><strong>Lipsync</strong></td><td>Sincronización de movimiento labial con un audio específico. No es automático solo por generar video con audio — hay que pedirlo explícitamente (<code>omni_reference</code> o <code>dubbing</code>).</td></tr>
         <tr><td><strong>TTS</strong></td><td>Text-to-Speech: generar audio de voz a partir de texto escrito (<code>seed_audio</code>). Distinto de doblaje: no traduce ni parte de un audio real.</td></tr>
